@@ -4,6 +4,7 @@ import pyscreenshot as pscrn
 from PIL import ImageGrab
 import time
 import keyboard
+import argparse
 
 
 # Return the current frame of the selected area of the screen
@@ -14,10 +15,25 @@ def image_cap(x, y, w, h):
     # frame = cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB)
     frame = img_np
     cv2.imshow("test", frame)
-    cv2.waitKey(0)
+    # cv2.waitKey(0)
     cv2.destroyAllWindows()
 
     return frame
+
+
+# For testing purposes
+# Using a single image that has been imported in for testing detection integrity
+def single_image_import(image_file):
+    try:
+        img = cv2.imread(image_file, 1)
+        frame = np.array(img)
+        cv2.imshow('test', frame)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        return frame
+    except:
+        print('error')
+        return -1
 
 
 # Increment Bl, Gr, Re, Di, GD, RD
@@ -45,14 +61,36 @@ def calc_total(mon_cnt, prl_cnt, gem_cnt):
 
 
 # Order of Operations
-def main(x, y, w, h, calc_key):
+def main(x, y, w, h, calc_key, test, image_file):
     # Co Bi GB Bl Gr Re Di GD RD Sm Me La
     mon_cnt = [0] * 3
     gem_cnt = [0] * 6
     prl_cnt = [0] * 3
 
-    while True:
-        frame = image_cap(x, y, w, h)
+
+    video_loop = True
+    while video_loop:
+
+        if test:
+            frame = single_image_import(image_file)
+            video_loop = False
+
+        else:
+            frame = image_cap(x, y, w, h)
+
+        find_scrn_col(frame)
+
+        # height
+        num_rows = frame.shape[0]
+
+        # width
+        num_cols = frame.shape[1]
+
+        # channels (should be BGR)
+        num_chnl = frame.shape[2]
+
+
+
 
         # if hidden ------- None
 
@@ -79,9 +117,14 @@ def main(x, y, w, h, calc_key):
 
 
 if "__main__" == __name__:
+
+    test = True
+
     x = 100
     y = 10
     w = 400
     h = 780
     calc_key = ''
-    main(x, y, w, h, calc_key)
+    # 107 x 78
+    image_file = "C:\Users\\bleblanc\Downloads\PersonalProjects\lm_gbh_images\stnd_vark.png"
+    main(x, y, w, h, calc_key, test, image_file)
