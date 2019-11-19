@@ -4,7 +4,8 @@ import pyscreenshot as pscrn
 from PIL import ImageGrab
 import time
 import keyboard
-import argparse
+import math
+import DetectCount
 
 
 # Return the current frame of the selected area of the screen
@@ -49,6 +50,50 @@ def inc_mon(frame, mon_cnt):
     return mon_cnt
 
 
+def find_scrn_col(frame):
+    color = -1
+    bgr_total = [0] * 3
+    # height
+    rows = frame.shape[0]
+    krnl_r_size = int(math.ceil(rows/5))
+    # width
+    cols = frame.shape[1]
+    krnl_c_size = int(math.ceil(cols/5))
+    # channels (should be BGR)
+    chnl = frame.shape[2]
+    if chnl != 3:
+        return -1
+    # Average BGR elements
+    for c in range(krnl_c_size):
+        for r in range(krnl_r_size):
+            bgr = frame[c, r]
+            bgr_total[0] += bgr[0]
+            bgr_total[1] += bgr[1]
+            bgr_total[2] += bgr[2]
+
+    total_cells = krnl_c_size * krnl_r_size
+    for i in range(len(bgr_total)):
+        bgr_total[i] = bgr_total[i] / total_cells
+
+    max_val = np.amax(bgr_total)
+    max_ind = bgr_total.index(max_val)
+    print(bgr_total)
+    for i in range(len(bgr_total)):
+        if i != max_ind:
+            if (max_val - bgr_total[i]) < 20:
+                return color
+    # GREEN
+    if max_ind == 1:
+        color = 1
+    # BLUE
+    elif max_ind == 0:
+        color = 0
+    # RED
+    elif max_ind == 2:
+        color = 2
+    return color
+
+
 # Calculate and print the total
 def calc_total(mon_cnt, prl_cnt, gem_cnt):
     total = 0
@@ -60,51 +105,38 @@ def calc_total(mon_cnt, prl_cnt, gem_cnt):
     print(str(total) + 'G')
 
 
-# Order of Operations
+# Order of collectibles
 def main(x, y, w, h, calc_key, test, image_file):
     # Co Bi GB Bl Gr Re Di GD RD Sm Me La
     mon_cnt = [0] * 3
     gem_cnt = [0] * 6
     prl_cnt = [0] * 3
 
-
     video_loop = True
     while video_loop:
-
         if test:
             frame = single_image_import(image_file)
             video_loop = False
-
         else:
             frame = image_cap(x, y, w, h)
+        scrn_color = find_scrn_col(frame)
+        print(scrn_color)
 
-        find_scrn_col(frame)
-
-        # height
-        num_rows = frame.shape[0]
-
-        # width
-        num_cols = frame.shape[1]
-
-        # channels (should be BGR)
-        num_chnl = frame.shape[2]
-
-
-
-
-        # if hidden ------- None
+        # elif green -------- Check --- 3-heights space
+        if scrn_color == 1:
+            mon_cnt = DetectCount.inc_mon(frame, mon_cnt)
 
         # elif blue --------- P ------- 3-height space
-        if True:
+        if scrn_color == 0:
             prl_cnt = inc_prl(frame, prl_cnt)
 
         # elif red ---------- G ------- mid-height space
-        if False:
+        if scrn_color == 2:
             gem_cnt = inc_gem(frame, gem_cnt)
 
-        # elif green -------- Check --- 3-heights space
-        if False:
-            mon_cnt = inc_mon(frame, mon_cnt)
+        # if hidden ------- None
+        if scrn_color == -1:
+            continue
 
         # UNFINISHED - If a calc_key is set, only calc_total on key press. If not set, auto-update
         if calc_key == '*':
@@ -126,5 +158,5 @@ if "__main__" == __name__:
     h = 780
     calc_key = ''
     # 107 x 78
-    image_file = "C:\Users\\bleblanc\Downloads\PersonalProjects\lm_gbh_images\stnd_vark.png"
+    image_file = r"C:\Users\\bleblanc\Downloads\PersonalProjects\lm_gbh_images\stnd_vark.png"
     main(x, y, w, h, calc_key, test, image_file)
